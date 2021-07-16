@@ -140,7 +140,7 @@ var util = (function(exports = {}) {
     };
     exports.pullJSON = filename => {
         let request = new XMLHttpRequest();
-        let url = window.location.protocol + "//" + global.server + "/json/" + filename + ".json";
+        let url = window.location.protocol + "//" + global.server + "/" + filename + ".json";
         // Set up the request
         console.log("Loading JSON from " + url);
         request.responseType = 'json';
@@ -2563,7 +2563,7 @@ const TextObj = (() => {
                 // Draw the cached text
                 ctx.save();
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(tctx.canvas, x - xx, y - yy * (1.05 + !center * 0.45));
+                ctx.drawImage(tctx.canvas, Math.round(x - xx), Math.round(y - yy * (1.05 + !center * 0.45)));
                 ctx.restore();
             },
             remove: () => {
@@ -2761,7 +2761,6 @@ const drawEntity = (() => {
             ctx.globalAlpha = fade;
             ctx.imageSmoothingEnabled = false;
             //ctx.globalCompositeOperation = "overlay";
-            ctx.filter = 'blur(' + Math.round(config.graphical.deathBlurAmount - config.graphical.deathBlurAmount * fade) + 'px)';
             ctx.drawImage(context.canvas, x - xx, y - yy);
             ctx.restore();
             //ctx.globalCompositeOperation = "source-over";
