@@ -62,7 +62,7 @@ var global = {
     toggleMassState: 0,
     backgroundColor: '#f2fbff',
     lineColor: '#000000',
-    server: "foam-tasty-sole.glitch.me"
+    server: "arras-template.glitch.me"
 };
 
 var util = (function(exports = {}) {
