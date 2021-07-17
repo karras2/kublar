@@ -19,6 +19,7 @@ var global = {
     KEY_UP_ARROW: 38,
     KEY_RIGHT_ARROW: 39,
     KEY_DOWN_ARROW: 40,
+    KEY_UPGRADE_MAX: 77,
     KEY_AUTO_SPIN: 67,
     KEY_AUTO_FIRE: 69,
     KEY_OVER_RIDE: 82,
@@ -1178,7 +1179,7 @@ class Canvas {
         this.socket = global.socket;
         this.directions = [];
         var self = this;
-
+        this.statMaxing = false;
         this.cv = document.getElementById('gameCanvas');
         this.cv.width = global.screenWidth;
         this.cv.height = global.screenHeight;
@@ -1197,6 +1198,9 @@ class Canvas {
                 if (global.died) this.parent.socket.talk('s', global.playerName, 0);
                 global.died = false;
                 break; // Enter to respawn
+            case global.KEY_UPGRADE_MAX:
+                this.statMaxing = true;
+                break;
             case global.KEY_UP_ARROW:
             case global.KEY_UP:
                 this.parent.socket.cmd.set(0, true);
@@ -1242,7 +1246,8 @@ class Canvas {
                     break;
             }
             if (global.canSkill) {
-                switch (event.keyCode) {
+                let times = this.statMaxing ? 12 : 1
+                do switch (event.keyCode) {
                     case global.KEY_UPGRADE_ATK:
                         this.parent.socket.talk('x', 0);
                         break;
@@ -1274,6 +1279,7 @@ class Canvas {
                         this.parent.socket.talk('x', 9);
                         break;
                 }
+                while (--times)
             }
             if (global.canUpgrade) {
                 switch (event.keyCode) {
@@ -1307,6 +1313,9 @@ class Canvas {
     }
     keyboardUp(event) {
         switch (event.keyCode) {
+            case global.KEY_UPGRADE_MAX:
+                this.statMaxing = false;
+                break;
             case global.KEY_UP_ARROW:
             case global.KEY_UP:
                 this.parent.socket.cmd.set(0, false);
