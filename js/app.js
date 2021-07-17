@@ -739,9 +739,160 @@ var player = { //Set up the player
         y: global.screenHeight / 2
     }
 };
+const Integrate = class {
+    constructor(dataLength) {
+        this.dataLength = dataLength
+        this.elements = {}
+    }
+    update(delta, index = 0) {
+        let deletedLength = delta[index++]
+        for (let i = 0; i < deletedLength; i++)
+            delete this.elements[delta[index++]]
+        let updatedLength = delta[index++]
+        for (let i = 0; i < updatedLength; i++) {
+            let id = delta[index++]
+            let data = delta.slice(index, index + this.dataLength)
+            index += this.dataLength
+            this.elements[id] = data
+        }
+        return index
+    }
+    entries() {
+        return Object.entries(this.elements).map(([id, data]) => ({
+            id: +id,
+            data
+        }))
+    }
+}
+const Minimap = class {
+    constructor(speed = 250) {
+        this.speed = speed
+        this.map = {}
+        this.lastUpdate = Date.now()
+    }
+    update(elements) {
+        this.lastUpdate = Date.now()
+        for (let [key, value] of Object.entries(this.map))
+            if (value.now) {
+                value.old = value.now
+                value.now = null
+            } else {
+                delete this.map[key]
+            }
+        for (let element of elements)
+            if (this.map[element.id]) {
+                this.map[element.id].now = element
+            } else {
+                this.map[element.id] = {
+                    old: null,
+                    now: element
+                }
+            }
+    }
+    get() {
+        let state = Math.min(1, (Date.now() - this.lastUpdate) / this.speed)
+        let stateOld = 1 - state
+        return Object.values(this.map).map(({
+            old,
+            now
+        }) => {
+            if (!now)
+                return {
+                    type: old.type,
+                    id: old.id,
+                    x: old.x,
+                    y: old.y,
+                    color: old.color,
+                    size: old.size,
+                    alpha: stateOld,
+                }
+            if (!old)
+                return {
+                    type: now.type,
+                    id: now.id,
+                    x: now.x,
+                    y: now.y,
+                    color: now.color,
+                    size: now.size,
+                    alpha: state,
+                }
+            return {
+                type: now.type,
+                id: now.id,
+                x: state * now.x + stateOld * old.x,
+                y: state * now.y + stateOld * old.y,
+                color: now.color,
+                size: state * now.size + stateOld * old.size,
+                alpha: 1,
+            }
+        })
+    }
+}
+// Build the leaderboard object
+const Entry = class {
+    constructor(to) {
+        this.score = Smoothbar(0, 10)
+        this.update(to)
+    }
+    update(to) {
+        this.name = to.name;
+        this.bar = to.bar
+        this.color = to.color
+        this.index = to.index
+        this.score.set(to.score)
+        this.old = false
+    }
+    publish() {
+        let ref = mockups[this.index]
+        return {
+            image: getEntityImageFromMockup(this.index, this.color),
+            position: ref.position,
+            barColor: getColor(this.bar),
+            label: this.name.length > 0 ? this.name + " - " + ref.name : ref.name,
+            score: this.score.get(),
+        }
+    }
+}
+const Leaderboard = class {
+    constructor() {
+        this.entries = {}
+    }
+    get() {
+        let out = []
+        let max = 1
+        for (let value of Object.values(this.entries)) {
+            let data = value.publish()
+            out.push(data)
+            if (data.score > max)
+                max = data.score
+        }
+        out.sort((a, b) => b.score - a.score)
+        return {
+            data: out,
+            max
+        }
+    }
+    update(elements) {
+        elements.sort((a, b) => b.score - a.score)
+        for (let value of Object.values(this.entries))
+            value.old = true
+        for (let element of elements)
+            if (this.entries[element.id])
+                this.entries[element.id].update(element)
+        else
+            this.entries[element.id] = new Entry(element)
+        for (let [id, value] of Object.entries(this.entries))
+            if (value.old)
+                delete this.entries[id]
+    }
+}
 var entities = [],
     users = [],
-    minimap = [],
+    minimapAllInt = new Integrate(5),
+    minimapTeamInt = new Integrate(3),
+    leaderboardInt = new Integrate(5),
+    leaderboard = new Leaderboard(),
+    minimap = new Minimap(200),
     upgradeSpin = 0,
     messages = [],
     messageFade = 0,
@@ -961,79 +1112,6 @@ var gui = {
 global.clearUpgrades = () => {
     gui.upgrades = [];
 };
-// Build the leaderboard object
-var leaderboard = (() => {
-    let entries = {};
-    // Define a handler for a particular entry
-    function Entry(name = '', bar = 0, color = 0) {
-        // The data
-        let index = 0,
-            truscore = 0,
-            score = Smoothbar(0, 10);
-        // These are the io functions
-        return {
-            update: (i, s) => {
-                index = i;
-                score.set(s);
-            },
-            publish: () => {
-                // Return the data package
-                let ref = mockups[index];
-                return {
-                    image: getEntityImageFromMockup(index, color),
-                    position: ref.position,
-                    barcolor: getColor(bar),
-                    label: (name === '') ? ref.name : name + ' - ' + ref.name,
-                    score: score.get(),
-                };
-            },
-        };
-    }
-    // Return the leaderboard methods
-    return {
-        get: () => {
-            let out = [],
-                maxscore = 1;
-            for (let e in entries) {
-                if (!entries.hasOwnProperty(e)) continue;
-                let data = entries[e].publish();
-                out.push(data);
-                if (data.score > maxscore) {
-                    maxscore = data.score;
-                }
-            }
-            out.sort((a, b) => {
-                return b.score - a.score;
-            });
-            return {
-                data: out,
-                max: maxscore,
-            };
-        },
-        remove: (index) => {
-            if (entries['_' + index] === undefined) {
-                console.log('Warning: Asked to removed an unknown leaderboard entry.');
-                return -1;
-            }
-            delete entries['_' + index];
-        },
-        add: (data) => {
-            let newentry = Entry(data.name, data.barcolor, data.color);
-            newentry.update(data.index, data.score);
-            entries['_' + data.id] = newentry;
-        },
-        update: (data) => {
-            if (entries['_' + data.id] === undefined) {
-                console.log('Warning: Asked to update an unknown leaderboard entry.');
-                return -1;
-            }
-            entries['_' + data.id].update(data.index, data.score);
-        },
-        purge: () => {
-            entries = {};
-        },
-    };
-})();
 // The ratio finder
 var getRatio = () => {
     return Math.max(global.screenWidth / player.renderv, global.screenHeight / player.renderv / 9 * 16);
@@ -2104,7 +2182,6 @@ exports.decode = decode
     })();
     // This is what we use to figure out what the hell the server is telling us to look at
     const convert = (() => {
-        // Make a data crawler
         const get = (() => {
             let index = 0,
                 crawlData = [];
@@ -2115,6 +2192,14 @@ exports.decode = decode
                         throw new Error('Trying to crawl past the end of the provided data!');
                     } else {
                         return crawlData[index++];
+                    }
+                },
+                all: () => crawlData.slice(index),
+                take: amount => {
+                    index += amount
+                    if (index > crawlData.length) {
+                        console.error(crawlData);
+                        throw new Error('Trying to crawl past the end of the provided data!');
                     }
                 },
                 set: (data) => {
@@ -2701,12 +2786,8 @@ exports.decode = decode
             }
             break;
             case 'b': { // broadcasted minimap
-                /*convert.begin(m);
-                convert.minimap();
-                if (convert.leaderboard()) {
-                    // Request an update because of desync
-                    //socket.talk('z');
-                }*/
+                convert.begin(m);
+                convert.broadcast();
             }
             break;
             case 'p': { // ping
@@ -2814,7 +2895,6 @@ function startGame() {
         animloop();
     }
     window.canvas.socket = global.socket;
-    minimap = [];
     setInterval(() => moveCompensation.iterate(global.socket.cmd.getMotion()), 1000 / 30);
     document.getElementById('gameCanvas').focus();
     window.onbeforeunload = () => {
@@ -2997,6 +3077,12 @@ function drawGuiRect(x, y, length, height, stroke = false) {
             ctx.fillRect(x, y, length, height);
             break;
     }
+}
+
+function drawGuiCircle(x, y, radius, stroke = false) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+    stroke ? ctx.stroke() : ctx.fill()
 }
 
 function drawGuiLine(x1, y1, x2, y2) {
@@ -3730,23 +3816,25 @@ const gameDraw = (() => {
             });
             ctx.fillStyle = color.grey;
             drawGuiRect(x, y, len, height);
-            minimap.forEach(o => {
-                if (o[2] === 17) {
-                    ctx.fillStyle = mixColors(getColor(o[2]), color.black, 0.5);
-                    ctx.globalAlpha = 0.8;
-                    drawGuiRect(x + (o[0] / global.gameWidth) * len, y + (o[1] / global.gameHeight) * height, 1, 1);
-                } else {
-                    ctx.strokeStyle = mixColors(getColor(o[2]), color.black, 0.5);
-                    ctx.lineWidth = 1;
-                    ctx.globalAlpha = 1;
-                    drawGuiRect(
-                        x + (o[0] / global.gameWidth) * len - 1,
-                        y + (o[1] / global.gameWidth) * height - 1,
-                        3, 3, true
-                    );
-                    ctx.lineWidth = 3;
-                }
-            });
+            // grabbed from imp-template2
+            for (let entity of minimap.get()) {
+                ctx.fillStyle = mixColors(getColor(entity.color), color.black, 0.3);
+                ctx.globalAlpha = 1;
+                2 === entity.type ? (drawGuiRect(
+                        x + ((entity.x - entity.size) / global.gameWidth) * len - 0.4,
+                        y + ((entity.y - entity.size) / global.gameWidth) * len - 1,
+                        ((2 * entity.size) / global.gameWidth) * len + 0.2,
+                        ((2 * entity.size) / global.gameWidth) * len + 0.2
+                    )) :
+                    1 === entity.type ?
+                    drawGuiCircle(
+                        x + (entity.x / global.gameWidth) * len,
+                        y + (entity.y / global.gameWidth) * len,
+                        (entity.size / global.gameWidth) * len + 0.2
+                    ) :
+                    entity.id !== gui.playerid &&
+                    drawGuiCircle(x + (entity.x / global.gameWidth) * len, y + (entity.y / global.gameWidth) * len, 2);
+            }
             ctx.globalAlpha = 1;
             ctx.lineWidth = 1;
             ctx.strokeStyle = color.black;
@@ -3812,7 +3900,7 @@ const gameDraw = (() => {
                 drawBar(x, x + len, y + height / 2, height - 3 + config.graphical.barChunk, color.black);
                 drawBar(x, x + len, y + height / 2, height - 3, color.grey);
                 let shift = Math.min(1, entry.score / max);
-                drawBar(x, x + len * shift, y + height / 2, height - 3.5, entry.barcolor);
+                drawBar(x, x + len * shift, y + height / 2, height - 3.5, entry.barColor);
                 // Leadboard name + score 
                 text.leaderboard[i++].draw(
                     entry.label + ': ' + util.handleLargeNumber(Math.round(entry.score)),
