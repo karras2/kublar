@@ -2353,8 +2353,6 @@ exports.decode = decode
                             // Nameplates
                             if (type & 0x04) { // has a nameplate
                                 z.name = get.next();
-                                z.namecolor = z.name.substring(0, 7),
-                                    z.name = z.name.slice(7);
                                 z.score = get.next();
                             }
                             z.nameplate = type & 0x04;
