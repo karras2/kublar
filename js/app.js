@@ -583,14 +583,19 @@ function getColorDark(givenColor) {
 function getZoneColor(cell, real) {
     switch (cell) {
         case 'bas1':
+        case 'bap1':
             return color.blue;
         case 'bas2':
+        case 'bap2':
             return color.green;
         case 'bas3':
+        case 'bap3':
             return color.red;
         case 'bas4':
+        case 'bap4':
             return color.pink;
-            //case 'nest': return (real) ? color.purple : color.lavender;     
+        case 'nest':
+            return (real) ? color.purple : color.lavender;
         default:
             return (real) ? color.white : color.lgrey;
     }
@@ -1149,18 +1154,48 @@ global.time = 0;
 
 // Window setup <3
 global.mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent);
-var serverName = 'Unknown Server';
+var serverName = 'USA-Glitch';
+var provider = "Unknown";
 window.onload = () => {
     // Server name stuff
-    switch (window.location.hostname) {
-        case '139.162.69.30':
-            serverName = '🇯🇵 arras-linode-tokyo';
+    switch (true) {
+        case window.location.hostname.includes("glitch"):
+            provider = "Glitch";
             break;
-        case '172.104.9.164':
-            serverName = '🇺🇸 arras-linode-newark';
+        case window.location.hostname.includes("herokuapp"):
+            provider = "Heroku";
+            break;
+        case window.location.hostname.includes("localhost"):
+            provider = "Localhost";
             break;
     }
-    document.getElementById('serverName').innerHTML = '<h4 class="nopadding">' + serverName + '</h4>';
+    window.port = 'silly-pine-buckthornpepperberry.glitch.me';
+    if (window.top.location.href.includes("polyester-scented-singularity.glitch.me")) window.port = 'polyester-scented-singularity.glitch.me';
+    if (window.top.location.href.includes("happy-pacific-kumquat.glitch.me")) window.port = 'happy-pacific-kumquat.glitch.me';
+    let serverAt = 0;
+    window.setPort = (port) => {
+        serverAt++;
+        if (serverAt > 2) serverAt = 0;
+        let ports = ['happy-pacific-kumquat.glitch.me', 'polyester-scented-singularity.glitch.me', 'silly-pine-buckthornpepperberry.glitch.me'];
+        if (ports.includes(port)) {
+            console.log("Port set!");
+            window.port = port;
+            let serverName = [
+                `FFA`,
+                `Closed Beta`,
+                `Random`
+            ];
+            serverName = serverName[ports.indexOf(port)];
+            document.getElementById('serverName').innerHTML = '<h4 class="nopadding">' + serverName + ' (Click to switch)</h4>';
+            document.getElementById('serverName').onclick = function() {
+                let port = ports[serverAt];
+                window.setPort(port);
+            };
+        } else {
+            console.log("Invalid server port or name!");
+        }
+    };
+    setPort(window.port);
     // Save forms
     util.retrieveFromLocalStorage('playerNameInput');
     util.retrieveFromLocalStorage('playerKeyInput');
@@ -2389,7 +2424,7 @@ exports.decode = decode
                             if (isNew) {
                                 z.render = {
                                     draws: false,
-                                    expandsWithDeath: z.drawsHealth,
+                                    expandsWithDeath: 0.5,
                                     lastRender: player.time,
                                     x: z.x,
                                     y: z.y,
@@ -3240,10 +3275,10 @@ const drawEntity = (() => {
             xx = x,
             yy = y,
             source = (turretInfo === false) ? instance : turretInfo;
-        if (render.expandsWithDeath) drawSize *= (1 + 0.5 * (1 - fade));
+        if (render.expandsWithDeath) drawSize *= (1 + 2 * (1 - fade));
         if (config.graphical.fancyAnimations && assignedContext != ctx2 && fade !== 1) {
             context = ctx2;
-            context.canvas.width = context.canvas.height = drawSize * m.position.axis + ratio * 20;
+            context.canvas.width = context.canvas.height = drawSize * m.position.axis + ratio * 10;
             xx = context.canvas.width / 2 - drawSize * m.position.axis * m.position.middle.x * Math.cos(rot) / 4;
             yy = context.canvas.height / 2 - drawSize * m.position.axis * m.position.middle.x * Math.sin(rot) / 4;
         }
@@ -3334,7 +3369,7 @@ const drawEntity = (() => {
 function drawHealth(x, y, instance, ratio) {
     // Draw health bar
     ctx.globalAlpha = Math.pow(instance.render.status.getFade(), 2);
-    let size = instance.size * ratio;
+    let size = (instance.size * ratio) / 1.1;
     let m = mockups[instance.index];
     let realSize = size / m.size * m.realSize;
     // Draw health
@@ -3342,12 +3377,12 @@ function drawHealth(x, y, instance, ratio) {
         let health = instance.render.health.get();
         let shield = instance.render.shield.get();
         if (health < 1 || shield < 1) {
-            let yy = y + 1.1 * realSize + 15;
-            drawBar(x - size, x + size, yy, 3 + config.graphical.barChunk, color.black);
-            drawBar(x - size, x - size + 2 * size * health, yy, 3, color.lgreen);
+            let yy = y + 1.1 * realSize + 15 * ratio;
+            drawBar(x - size, x + size, yy, (2 + config.graphical.barChunk) * ratio, color.black);
+            drawBar(x - size, x - size + 2 * size * health, yy, 3.5 * ratio, color.lgreen);
             if (shield) {
                 ctx.globalAlpha = 0.3 + shield * 0.3;
-                drawBar(x - size, x - size + 2 * size * shield, yy, 3, color.teal);
+                drawBar(x - size, x - size + 2 * size * shield, yy, 2 * ratio, color.teal);
                 ctx.globalAlpha = 1;
             }
         }
