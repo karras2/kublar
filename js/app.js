@@ -4102,12 +4102,10 @@ const gameDraw = (() => {
             }
             ctx.globalAlpha = 1;
             ctx.lineWidth = 1;
+            ctx.fillStyle = color.black;
             ctx.strokeStyle = color.black;
-            drawGuiRect( // My position
-                x + (player.x / global.gameWidth) * len - 1,
-                y + (player.y / global.gameWidth) * height - 1,
-                3, 3, true
-            );
+                                drawGuiCircle(x + (player.x / global.gameWidth) * len, y + (player.y / global.gameWidth) * len, 2);
+
             ctx.lineWidth = 3;
             ctx.fillStyle = color.black;
             drawGuiRoundRect(x, y, len, height, 10, true); // Border
@@ -4168,7 +4166,7 @@ const gameDraw = (() => {
                 drawBar(x, x + len * shift, y + height / 2, height - 3.5, entry.barColor);
                 // Leadboard name + score 
                 text.leaderboard[i++].draw(
-                    entry.label + ': ' + util.handleLargeNumber(Math.round(entry.score)),
+                    entry.label.slice(7) + ': ' + util.handleLargeNumber(Math.round(entry.score)),
                     x + len / 2, y + height / 2,
                     height - 5, entry.nameColor, 'center', true
                 );
