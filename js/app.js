@@ -526,6 +526,7 @@ let mixColors = (() => {
 })();
 
 function getColor(colorNumber) {
+    if (colorNumber > 99 && colorNumber < 186) return ["#FF0000", "#FF1A00", "#FF2A00", "#FF4300", "#FF5D00", "#FF7200", "#FF7700", "#FF9400", "#FF9900", "#FFA500", "#FFBB00", "#FFCC00", "#FFDD00", "#FFE900", "#FFFA00", "#EEFF00", "#DDFF00", "#D0FF00", "#B6FF00", "#AAFF00", "#88FF00", "#6EFF00", "#54FF00", "#32FF00", "#19FF00", "#04FF00", "#00FF15", "#00FF26", "#00FF3F", "#00FF55", "#00FF6E", "#00FF7F", "#00FF99", "#00FFA5", "#00FFBB", "#00FFCB", "#00FFD8", "#00FFED", "#00FFFA", "#00E9FF", "#00D8FF", "#00C3FF", "#00BBFF", "#00AEFF", "#00A1FF", "#0090FF", "#007FFF", "#0077FF", "#006EFF", "#005DFF", "#0048FF", "#0037FF", "#0026FF", "#0019FF", "#0004FF", "#0C00FF", "#2200FF", "#2E00FF", "#3B00FF", "#5400FF", "#6A00FF", "#7F00FF", "#9000FF", "#A100FF", "#B600FF", "#BF00FF", "#D000FF", "#DC00FF", "#E900FF", "#FA00FF", "#FF00F6", "#FF00E1", "#FF00CB", "#FF00B6", "#FF00AA", "#FF00A5", "#FF0090", "#FF007B", "#FF006E", "#FF005D", "#FF0059", "#FF0043", "#FF003B", "#FF0026", "#FF001D", "#FF000C"][colorNumber - 100];
     switch (colorNumber) {
         case 0:
             return color.teal;
@@ -1048,22 +1049,12 @@ var gui = {
         softcap: 1,
     }, {
         amount: 0,
+        color: 'teal',
+        cap: 1,
+        softcap: 1,
+    }, {
+        amount: 0,
         color: 'blue',
-        cap: 1,
-        softcap: 1,
-    }, {
-        amount: 0,
-        color: 'lgreen',
-        cap: 1,
-        softcap: 1,
-    }, {
-        amount: 0,
-        color: 'red',
-        cap: 1,
-        softcap: 1,
-    }, {
-        amount: 0,
-        color: 'yellow',
         cap: 1,
         softcap: 1,
     }, {
@@ -1073,7 +1064,12 @@ var gui = {
         softcap: 1,
     }, {
         amount: 0,
-        color: 'teal',
+        color: 'lgreen',
+        cap: 1,
+        softcap: 1,
+    }, {
+        amount: 0,
+        color: 'yellow',
         cap: 1,
         softcap: 1,
     }, {
@@ -1084,6 +1080,11 @@ var gui = {
     }, {
         amount: 0,
         color: 'orange',
+        cap: 1,
+        softcap: 1,
+    }, {
+        amount: 0,
+        color: 'red',
         cap: 1,
         softcap: 1,
     }],
@@ -3117,6 +3118,31 @@ function drawGuiRect(x, y, length, height, stroke = false) {
     }
 }
 
+function drawGuiRoundRect(x, y, w, h, r, stroke = !1, cornerArray = [!0, !0, !0, !0]) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, cornerArray[0] ? r : 0);
+    ctx.arcTo(x + w, y + h, x, y + h, cornerArray[1] ? r : 0);
+    ctx.arcTo(x, y + h, x, y, cornerArray[2] ? r : 0);
+    ctx.arcTo(x, y, x + w, y, cornerArray[3] ? r : 0);
+    ctx.closePath();
+    stroke ? ctx.stroke() : ctx.fill()
+}
+CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this
+};
+
 function drawGuiCircle(x, y, radius, stroke = false) {
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
@@ -4026,7 +4052,7 @@ const gameDraw = (() => {
             );
             ctx.lineWidth = 3;
             ctx.fillStyle = color.black;
-            drawGuiRect(x, y, len, height, true); // Border
+            drawGuiRoundRect(x, y, len, height, 10, true); // Border
 
             drawGuiRect(x, y - 40, len, 30);
             lagGraph(lag.get(), x, y - 40, len, 30, color.teal);
@@ -4072,7 +4098,7 @@ const gameDraw = (() => {
             let x = global.screenWidth - len - spacing;
             let y = spacing + height + 7;
             text.lbtitle.draw(
-                'Leaderboard:', Math.round(x + len / 2) + 0.5,
+                'Leaderboard', Math.round(x + len / 2) + 0.5,
                 Math.round(y - 6) + 0.5,
                 height + 4, color.guiwhite, 'center'
             );
@@ -4098,7 +4124,8 @@ const gameDraw = (() => {
             });
         }
 
-        { // Draw upgrade menu
+       { // Draw upgrade menu
+         if (global.showTree) return;
             upgradeMenu.set(0 + (global.canUpgrade || global.upgradeHover));
             let glide = upgradeMenu.get();
             global.clickables.upgrade.hide();
@@ -4134,7 +4161,7 @@ const gameDraw = (() => {
                 let yo = y;
                 let ticker = 0;
                 upgradeSpin += 0.01;
-                let colorIndex = 10;
+                let colorIndex = global.tankMenuColor;
                 let i = 0;
                 gui.upgrades.forEach(function drawAnUpgrade(model) {
                     if (y > yo) yo = y;
@@ -4142,16 +4169,18 @@ const gameDraw = (() => {
                     global.clickables.upgrade.place(i++, x, y, len, height);
                     // Draw box
                     ctx.globalAlpha = 0.5;
-                    ctx.fillStyle = getColor(colorIndex);
-                    drawGuiRect(x, y, len, height);
+                    ctx.fillStyle = getColor(colorIndex > 186 ? colorIndex - 86 : colorIndex);
+                    drawGuiRoundRect(x, y, len, height, 10);
                     ctx.globalAlpha = 0.1;
-                    ctx.fillStyle = getColor(-10 + colorIndex++);
-                    drawGuiRect(x, y, len, height * 0.6);
+                    ctx.fillStyle = getColor(-10 + (colorIndex++ - (colorIndex > 186 ? 86 : 0)));
+                    colorIndex++
+                    drawGuiRoundRect(x, y, len, height * 0.6, 10);
                     ctx.fillStyle = color.black;
                     drawGuiRect(x, y + height * 0.6, len, height * 0.4);
                     ctx.globalAlpha = 1;
                     // Find offset location with rotation
-                    let picture = getEntityImageFromMockup(model, gui.color),
+                    let realColor = mockups[model].color === 16 ? gui.color : mockups[model].color;
+                    let picture = getEntityImageFromMockup(model, realColor),
                         position = mockups[model].position,
                         scale = 0.6 * len / position.axis,
                         xx = x + 0.5 * len - scale * position.middle.x * Math.cos(upgradeSpin),
@@ -4163,16 +4192,10 @@ const gameDraw = (() => {
                         x + 0.9 * len / 2, y + height - 6,
                         height / 8 - 3, color.guiwhite, 'center'
                     );
-                    // Upgrade key
-                    text.upgradeKeys[i - 1].draw(
-                        '[' + getClassUpgradeKey(ticker) + ']',
-                        x + len - 4, y + height - 6,
-                        height / 8 - 3, color.guiwhite, 'right'
-                    );
                     ctx.strokeStyle = color.black;
                     ctx.globalAlpha = 1;
                     ctx.lineWidth = 3;
-                    drawGuiRect(x, y, len, height, true); // Border
+                    drawGuiRoundRect(x, y, len, height, 10, true); // Border
                     if (ticker++ % 2) {
                         y -= height + internalSpacing;
                         x += glide * (len + internalSpacing);
