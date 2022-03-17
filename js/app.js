@@ -187,7 +187,7 @@ var util = (function(exports = {}) {
 var config = {
     graphical: {
         screenshotMode: false,
-        borderChunk: 6,
+        borderChunk: 5,
         barChunk: 5,
         mininumBorderChunk: 3,
         deathBlurAmount: 3,
@@ -1236,7 +1236,7 @@ class Canvas {
         this.socket = global.socket;
         this.directions = [];
         var self = this;
-        this.statMaxing = false;
+
         this.cv = document.getElementById('gameCanvas');
         this.cv.width = global.screenWidth;
         this.cv.height = global.screenHeight;
@@ -1251,13 +1251,13 @@ class Canvas {
 
     keyboardDown(event) {
         switch (event.keyCode) {
+            case global.KEY_UPGRADE_MAX:
+                this.statMaxing = !0;
+                break;
             case 13:
                 if (global.died) this.parent.socket.talk('s', global.playerName, 0);
                 global.died = false;
                 break; // Enter to respawn
-            case global.KEY_UPGRADE_MAX:
-                this.statMaxing = true;
-                break;
             case global.KEY_UP_ARROW:
             case global.KEY_UP:
                 this.parent.socket.cmd.set(0, true);
@@ -1286,8 +1286,14 @@ class Canvas {
             case global.KEY_LEVEL_UP:
                 this.parent.socket.talk('L');
                 break;
-            case global.KEY_FUCK_YOU:
+            case global.KEY_TESTBED:
                 this.parent.socket.talk('0');
+                break;
+            case global.KEY_TELEPORT:
+                this.parent.socket.talk('T');
+                break;
+            case global.KEY_PASSIVE:
+                this.parent.socket.talk('P');
                 break;
         }
         if (!event.repeat) {
@@ -1301,42 +1307,48 @@ class Canvas {
                 case global.KEY_OVER_RIDE:
                     this.parent.socket.talk('t', 2);
                     break;
+                case global.KEY_CLASS_TREE:
+                     global.showTree = !global.showTree;
+                    break;
+                case global.KEY_DEBUG:
+                    global.showDebug = true;
+                    break;
             }
             if (global.canSkill) {
-                let times = this.statMaxing ? 12 : 1
-                do switch (event.keyCode) {
-                    case global.KEY_UPGRADE_ATK:
-                        this.parent.socket.talk('x', 0);
-                        break;
-                    case global.KEY_UPGRADE_HTL:
-                        this.parent.socket.talk('x', 1);
-                        break;
-                    case global.KEY_UPGRADE_SPD:
-                        this.parent.socket.talk('x', 2);
-                        break;
-                    case global.KEY_UPGRADE_STR:
-                        this.parent.socket.talk('x', 3);
-                        break;
-                    case global.KEY_UPGRADE_PEN:
-                        this.parent.socket.talk('x', 4);
-                        break;
-                    case global.KEY_UPGRADE_DAM:
-                        this.parent.socket.talk('x', 5);
-                        break;
-                    case global.KEY_UPGRADE_RLD:
-                        this.parent.socket.talk('x', 6);
-                        break;
-                    case global.KEY_UPGRADE_MOB:
-                        this.parent.socket.talk('x', 7);
-                        break;
-                    case global.KEY_UPGRADE_RGN:
-                        this.parent.socket.talk('x', 8);
-                        break;
-                    case global.KEY_UPGRADE_SHI:
-                        this.parent.socket.talk('x', 9);
-                        break;
-                }
-                while (--times)
+                let t = this.statMaxing ? 15 : 1;
+                do {
+                    switch (event.keyCode) {
+                        case global.KEY_UPGRADE_ATK:
+                            this.parent.socket.talk("x", 0);
+                            break;
+                        case global.KEY_UPGRADE_HTL:
+                            this.parent.socket.talk("x", 1);
+                            break;
+                        case global.KEY_UPGRADE_SPD:
+                            this.parent.socket.talk("x", 2);
+                            break;
+                        case global.KEY_UPGRADE_STR:
+                            this.parent.socket.talk("x", 3);
+                            break;
+                        case global.KEY_UPGRADE_PEN:
+                            this.parent.socket.talk("x", 4);
+                            break;
+                        case global.KEY_UPGRADE_DAM:
+                            this.parent.socket.talk("x", 5);
+                            break;
+                        case global.KEY_UPGRADE_RLD:
+                            this.parent.socket.talk("x", 6);
+                            break;
+                        case global.KEY_UPGRADE_MOB:
+                            this.parent.socket.talk("x", 7);
+                            break;
+                        case global.KEY_UPGRADE_RGN:
+                            this.parent.socket.talk("x", 8);
+                            break;
+                        case global.KEY_UPGRADE_SHI:
+                            this.parent.socket.talk("x", 9);
+                    }
+                } while (--t);
             }
             if (global.canUpgrade) {
                 switch (event.keyCode) {
@@ -1371,7 +1383,7 @@ class Canvas {
     keyboardUp(event) {
         switch (event.keyCode) {
             case global.KEY_UPGRADE_MAX:
-                this.statMaxing = false;
+                this.statMaxing = !1;
                 break;
             case global.KEY_UP_ARROW:
             case global.KEY_UP:
@@ -1397,6 +1409,9 @@ class Canvas {
                 break;
             case global.KEY_MOUSE_2:
                 this.parent.socket.cmd.set(6, false);
+                break;
+            case global.KEY_DEBUG:
+                global.showDebug = false;
                 break;
         }
     }
@@ -3229,6 +3244,13 @@ const drawEntity = (() => {
                 };
                 context.quadraticCurveTo(c.x, c.y, p.x, p.y);
             }
+        } else if (sides === 600) {
+            for (let i = 0; i < 6; i++) {
+                let theta = (i / 6) * 2 * Math.PI,
+                    x = centerX + radius * 1.1 * Math.cos(180 / 6 + theta + angle + 0.385),
+                    y = centerY + radius * 1.1 * Math.sin(180 / 6 + theta + angle + 0.385);
+                context.lineTo(x, y);
+            }
         } else if (sides > 0) { // Polygon
             for (let i = 0; i < sides; i++) {
                 let theta = (i / sides) * 2 * Math.PI;
@@ -4304,6 +4326,8 @@ const gameDrawDead = (() => {
         return txt;
     };
     return () => {
+        animations.death = util.lerp(animations.death, 0, .05);
+        ctx.translate(0, animations.death * global.screenHeight);
         clearScreen(color.black, 0.25);
         let x = global.screenWidth / 2,
             y = global.screenHeight / 2 - 50;
@@ -4314,15 +4338,12 @@ const gameDrawDead = (() => {
             xx = global.screenWidth / 2 - scale * position.middle.x * 0.707,
             yy = global.screenHeight / 2 - 35 + scale * position.middle.x * 0.707;
         drawEntity(xx - 190 - len / 2, yy - 10, picture, 1.5, 0.5 * scale / picture.realSize, -Math.PI / 4, true);
-        text.taunt.draw(
-            'lol you died', x, y - 80, 8, color.guiwhite, 'center'
-        );
         text.level.draw(
-            'Level ' + gui.__s.getLevel() + ' ' + mockups[gui.type].name + '.',
-            x - 170, y - 30, 24, color.guiwhite
+            player.name + "'s Stats",
+            x - 170, y - 30, 24, player.nameColor
         );
         text.score.draw(
-            'Final score: ' + util.formatLargeNumber(Math.round(global.finalScore.get())),
+            util.formatLargeNumber(Math.round(global.finalScore.get())),
             x - 170, y + 25, 50, color.guiwhite
         );
         text.time.draw(
@@ -4336,8 +4357,9 @@ const gameDrawDead = (() => {
             getDeath(), x - 170, y + 99, 16, color.guiwhite
         );
         text.playagain.draw(
-            'Press enter to play again!', x, y + 125, 16, color.guiwhite, 'center'
+            '(press enter to respawn)', x, y + 125, 16, color.guiwhite, 'center'
         );
+        ctx.translate(0, -animations.death * global.screenHeight)
     };
 })();
 
@@ -4346,10 +4368,27 @@ const gameDrawBeforeStart = (() => {
         connecting: TextObj(),
         message: TextObj(),
     };
+    let tipSets = [
+        [
+            'Tip: You can view and edit your keybinds in the options menu.',
+            'Press E to enable autofire!',
+            'Press C to enable autospin!',
+            'Press E to enable override!',
+            'Holding N can level you up instantly!',
+            'Tip: You can customize the games look and feel in the options menu.',
+            'Fact: You can switch the server by clicking the server name on the title.'
+        ]
+    ]
+    let selectedSet = tipSets[Math.floor(Math.random() * tipSets.length)]
+    let selectedTip = selectedSet[Math.floor(Math.random() * selectedSet.length)]
     return () => {
+        animations.connecting = util.lerp(animations.connecting, 0, .05);
+        ctx.translate(0, animations.connecting * global.screenHeight);
         clearScreen(color.white, 0.5);
         text.connecting.draw('Connecting...', global.screenWidth / 2, global.screenHeight / 2, 30, color.guiwhite, 'center');
         text.message.draw(global.message, global.screenWidth / 2, global.screenHeight / 2 + 30, 15, color.lgreen, 'center');
+        text.message.draw(selectedTip, global.screenWidth / 2, global.screenHeight / 2 + 75, 15, color.guiwhite, 'center');
+        ctx.translate(0, -animations.connecting * global.screenHeight)
     };
 })();
 
@@ -4359,12 +4398,16 @@ const gameDrawDisconnected = (() => {
         message: TextObj(),
     };
     return () => {
+        animations.death = util.lerp(animations.death, 0, .05);
+        ctx.translate(0, animations.death * global.screenHeight);
         clearScreen(mixColors(color.red, color.guiblack, 0.3), 0.25);
-        text.disconnected.draw('💀 Disconnected. 💀', global.screenWidth / 2, global.screenHeight / 2, 30, color.guiwhite, 'center');
+        text.disconnected.draw('💀 Disconnected 💀', global.screenWidth / 2, global.screenHeight / 2, 30, color.guiwhite, 'center');
         text.message.draw(global.message, global.screenWidth / 2, global.screenHeight / 2 + 30, 15, color.orange, 'center');
+        ctx.translate(0, -animations.death * global.screenHeight)
     };
 })();
 
+// The main function
 // The main function
 function animloop() {
     global.animLoopHandle = window.requestAnimFrame(animloop);
