@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg height="400" width="400" xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+  <defs>
+    <linearGradient id="myGradient" gradientTransform="rotate(335)">
+      <stop offset="5%"  stop-color="#03cffc" />
+      <stop offset="95%" stop-color="#003cff" />
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="200" r="200" fill="url('#myGradient')" />
+  <polyline points="207.5,127.5 267.5,67.5 332.5,132.5 272.5,192.5" stroke="#ffffff" stroke-width="20" stroke-linejoin="round" fill="none" />
+  <circle cx="175" cy="225" r="100" stroke="#ffffff" stroke-width="20" fill="none" />
+</svg>

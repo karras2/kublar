@@ -19,7 +19,6 @@ var global = {
     KEY_UP_ARROW: 38,
     KEY_RIGHT_ARROW: 39,
     KEY_DOWN_ARROW: 40,
-    KEY_UPGRADE_MAX: 77,
     KEY_AUTO_SPIN: 67,
     KEY_AUTO_FIRE: 69,
     KEY_OVER_RIDE: 82,
@@ -33,6 +32,7 @@ var global = {
     KEY_UPGRADE_MOB: 56,
     KEY_UPGRADE_RGN: 57,
     KEY_UPGRADE_SHI: 48,
+    KEY_UPGRADE_MAX: 77,
     KEY_MOUSE_0: 32,
     KEY_MOUSE_1: 86,
     KEY_MOUSE_2: 16,
@@ -45,8 +45,13 @@ var global = {
     KEY_CHOOSE_7: 79,
     KEY_CHOOSE_8: 76,
     KEY_LEVEL_UP: 78,
-    KEY_FUCK_YOU: 191,
-
+    KEY_TESTBED: 192,
+    KEY_TELEPORT: 84,
+    KEY_DEBUG: 76,
+    KEY_PASSIVE: 80,
+    KEY_CLASS_TREE: 89,
+    showTree: false,
+    scrollX: 0,
     // Canvas
     screenWidth: window.innerWidth,
     screenHeight: window.innerHeight,
@@ -57,15 +62,27 @@ var global = {
     gameStart: false,
     disconnected: false,
     died: false,
+    tankMenuColor: 100 + Math.round(Math.random() * 70),
     kicked: false,
     continuity: false,
+    showDebug: false,
     startPingTime: 0,
     toggleMassState: 0,
     backgroundColor: '#f2fbff',
     lineColor: '#000000',
-    server: "arras-template.glitch.me"
+    server: "silly-pine-buckthornpepperberry.glitch.me"
 };
 
+let animations = {
+    connecting: 1,
+    disconnected: 1,
+    death: 1,
+    leaderboard: 0.1,
+    messages: 0.1,
+    scoreBars: 0.1,
+    grid: 1,
+    minimap: 0.1,
+};
 var util = (function(exports = {}) {
     exports.submitToLocalStorage = name => {
         localStorage.setItem(name + 'Value', document.getElementById(name).value);
@@ -76,6 +93,9 @@ var util = (function(exports = {}) {
         document.getElementById(name).value = localStorage.getItem(name + 'Value');
         document.getElementById(name).checked = localStorage.getItem(name + 'Checked') === 'true';
         return false;
+    };
+    exports.lerp = function(v0, v1, t) {
+        return v0 * (1 - t) + v1 * t
     };
     exports.handleLargeNumber = (a, cullZeroes = false) => {
         if (cullZeroes && a == 0) {
@@ -737,8 +757,9 @@ var player = { //Set up the player
     screenHeight: global.screenHeight,
     target: {
         x: global.screenWidth / 2,
-        y: global.screenHeight / 2
-    }
+        y: global.screenHeight / 2,
+    },
+    nameColor: "#ffffff"
 };
 const Integrate = class {
     constructor(dataLength) {
@@ -1426,8 +1447,7 @@ function Smoothbar(value, speed, sharpness = 3) {
             }
         },
         get: () => {
-            let timediff = (Date.now() - time) / 1000;
-            display = (timediff < speed) ? oldvalue + (value - oldvalue) * Math.pow(timediff / speed, 1 / sharpness) : value;
+            display = util.lerp(display, value, 0.05);
             return display;
         },
     };
@@ -1459,19 +1479,27 @@ var getNow = () => {
     return Date.now() - clockDiff - serverStart;
 };
 var player = {
+    x: 0,
+    y: 0,
+    cx: 0,
+    cy: 0,
     vx: 0,
     vy: 0,
     lastvx: 0,
     lastvy: 0,
-    renderx: player.x,
-    rendery: player.y,
-    lastx: player.x,
-    lasty: player.y,
+    renderx: 0,
+    rendery: 0,
+    renderv: 1,
+    lastx: 0,
+    lasty: 0,
     target: window.canvas.target,
     name: '',
+    view: 1,
     lastUpdate: 0,
     time: 0,
+    nameColor: "#ffffff"
 };
+
 
 // Jumping the gun on motion
 var moveCompensation = (() => {
@@ -2757,6 +2785,9 @@ exports.decode = decode
                     convert.begin(theshit);
                     convert.gui();
                     convert.data();
+                    // Set camera values
+                    player.cx = camx
+                    player.cy = camy
                     // Save old physics values
                     player.lastx = player.x;
                     player.lasty = player.y;
@@ -2890,9 +2921,9 @@ function startGame() {
     global.playerName = player.name = playerNameInput.value;
     global.playerKey = playerKeyInput.value.replace(/(<([^>]+)>)/ig, '').substring(0, 64);
     // Change the screen
-    global.screenWidth = window.innerWidth;
-    global.screenHeight = window.innerHeight;
-    document.getElementById('startMenuWrapper').style.maxHeight = '0px';
+    global.screenWidth = window.innerWidth * devicePixelRatio;
+    global.screenHeight = window.innerHeight * devicePixelRatio;
+    document.getElementById('startMenuWrapper').style.top = '-600px';
     document.getElementById('gameAreaWrapper').style.opacity = 1;
     // Set up the socket
     if (!global.socket) {
@@ -3416,6 +3447,22 @@ const gameDraw = (() => {
                 predictFacing: (f1, f2) => {
                     return f1 + (1 + tt) * angleDifference(f1, f2);
                 },
+                lerp: util.lerp,
+                lerpAngle: (is, to, amount, syncWithFps) => {
+                    var normal = {
+                        x: Math.cos(is),
+                        y: Math.sin(is)
+                    };
+                    var normal2 = {
+                        x: Math.cos(to),
+                        y: Math.sin(to)
+                    };
+                    var res = {
+                        x: util.lerp(normal.x, normal2.x, amount, syncWithFps),
+                        y: util.lerp(normal.y, normal2.y, amount, syncWithFps)
+                    };
+                    return Math.atan2(res.y, res.x);
+                },
                 getPrediction: () => {
                     return t;
                 },
@@ -3513,8 +3560,136 @@ const gameDraw = (() => {
             TextObj(),
             TextObj(),
             TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
         ],
         upgradeKeys: [
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
+            TextObj(),
             TextObj(),
             TextObj(),
             TextObj(),
@@ -3542,12 +3717,8 @@ const gameDraw = (() => {
             }; // moveCompensation.get();
             GRAPHDATA = motion.getPrediction();
             // Don't move the camera if you're dead. This helps with jitter issues
-            player.renderx =
-                motion.predict(player.lastx, player.x, player.lastvx, player.vx) +
-                smear.x;
-            player.rendery =
-                motion.predict(player.lasty, player.y, player.lastvy, player.vy) +
-                smear.y;
+            player.renderx = util.lerp(player.renderx, player.cx, 0.1);
+            player.rendery = util.lerp(player.rendery, player.cy, 0.1);
             //player.renderx += (desiredx - player.renderx) / 5;
             //player.rendery += (desiredy - player.rendery) / 5;
             px = ratio * player.renderx;
@@ -3557,6 +3728,8 @@ const gameDraw = (() => {
         { // Clear the background + draw grid 
             clearScreen(color.white, 1);
             clearScreen(color.guiblack, 0.1);
+            animations.grid = util.lerp(animations.grid, 0, .05);
+            ctx.translate(0, animations.grid * global.screenHeight);
 
             let W = roomSetup[0].length,
                 H = roomSetup.length,
@@ -3593,6 +3766,7 @@ const gameDraw = (() => {
             }
             ctx.stroke();
             ctx.globalAlpha = 1;
+            ctx.translate(0, -animations.grid * global.screenHeight)
         }
 
         { // Draw things 
@@ -3606,21 +3780,21 @@ const gameDraw = (() => {
                 } else {
                     motion.set(instance.render.lastRender, instance.render.interval);
                 }
-                instance.render.x = motion.predict(instance.render.lastx, instance.x, instance.render.lastvx, instance.vx);
-                instance.render.y = motion.predict(instance.render.lasty, instance.y, instance.render.lastvy, instance.vy);
+                instance.render.x = motion.lerp(instance.render.x, instance.x + instance.vx, 0.15);
+                instance.render.y = motion.lerp(instance.render.y, instance.y + instance.vy, 0.15);
                 instance.render.f = (instance.id === gui.playerid && !instance.twiggle) ?
                     Math.atan2(target.y, target.x) :
-                    motion.predictFacing(instance.render.lastf, instance.facing);
-                let x = (instance.id === gui.playerid) ? 0 : ratio * instance.render.x - px,
-                    y = (instance.id === gui.playerid) ? 0 : ratio * instance.render.y - py;
+                    motion.lerpAngle(instance.render.f, instance.facing, 0.15);
+                let x = ratio * instance.render.x - px,
+                    y = ratio * instance.render.y - py;
                 x += global.screenWidth / 2;
                 y += global.screenHeight / 2;
-                drawEntity(x, y, instance, ratio, 1.1, instance.render.f);
+                drawEntity(x, y, instance, ratio, 1, instance.render.f);
             });
             if (!config.graphical.screenshotMode) {
                 entities.forEach(function entityhealthdrawingloop(instance) {
-                    let x = (instance.id === gui.playerid) ? 0 : ratio * instance.render.x - px,
-                        y = (instance.id === gui.playerid) ? 0 : ratio * instance.render.y - py;
+                    let x = ratio * instance.render.x - px,
+                        y = ratio * instance.render.y - py;
                     x += global.screenWidth / 2;
                     y += global.screenHeight / 2;
                     drawHealth(x, y, instance, ratio);
@@ -3628,7 +3802,7 @@ const gameDraw = (() => {
             }
         }
 
-        // Draw GUI       
+    // Draw GUI
         let alcoveSize = 200 / Math.max(global.screenWidth, global.screenHeight * 16 / 9);
         let spacing = 20;
         gui.__s.update();

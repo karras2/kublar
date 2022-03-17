@@ -1,3 +1,16 @@
+::-webkit-scrollbar {
+  width: 6px;
+  height: 0;
+}
+::-webkit-scrollbar-track {
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.15);
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
 * {
     font-family: Ubuntu;
     font-size: 14px;
@@ -8,14 +21,26 @@
 }
 
 #mainBody {
-    background-color: #484848;
+  	background-image: linear-gradient(140deg, #03cffc, #003cff)
 }
 
-html, body, canvas {
+hr {
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  margin: 18px 0 18px;
+}
+
+html,
+body,
+canvas {
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
+}
+
+canvas {
+  image-rendering: optimizeSpeed;
+  image-rendering: pixelated;
 }
 
 h1 {
@@ -35,26 +60,27 @@ h2 {
 }
 
 optionsHeader {
-    padding: 0;
-    padding-bottom: 5px;
-    margin: 0;
-    font-size: small;
-    color: #000000;
-    font-weight: bold;
-    text-align: center;
+  display: block;
+  text-align: center;
+  margin: 8px 0 4px;
+  font: bold 13px/1 Ubuntu;
+  color: #000;
+  text-align: center;
 }
 
 h3 {
-    font-size: small;
-    color: #484848;
-    font-style: italic;
-    text-align: center;
+  font-size: 14px;
+  color: #484848;
+  text-align: center;
+  padding: 0;
+  margin: 4px 0;
 }
 
 h4 {
-    font-size: small;
-    color: #8ABC3F;
-    text-align: center;
+	font-size: 14px;
+	font-weight: 700;
+  color: #00b4db;
+  text-align: center;
 }
 
 h5 {
@@ -192,6 +218,32 @@ table {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
+.shadowScroll {
+  overflow-y: scroll;
+  background:
+    /* Shadow covers */
+    linear-gradient(#dde6eb 30%, rgba(255, 255, 255, 0)),
+    linear-gradient(rgba(255, 255, 255, 0), #dde6eb 70%) 0 100%,
+    /* Shadows */
+    radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0)),
+    radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, .2), rgba(0, 0, 0, 0)) 0 100%;
+  background-repeat: no-repeat;
+  background-color: #dde6eb;
+  background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.icon {
+  display: block;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+body.mobile .icon {
+  width: 48px;
+  height: 48px;
+}
+
 update {
     color: #D83848;
     font-weight: bold;
@@ -209,6 +261,11 @@ update {
     overflow: auto;
 }
 
+hr {
+  border: 0.5px solid rgba(0, 0, 0, 0.15);
+  margin: 18px 0 18px;
+}
+
 #startButton {
     position: relative;
     margin: auto;
@@ -219,19 +276,19 @@ update {
     color: white;
     text-align: center;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #B9E87E;
+    background: #03cffc;
     border: 0;
-    border-bottom: 2px solid #8ABC3F;
+    border-bottom: 2px solid #02acd1;
     cursor: pointer;
-    -webkit-box-shadow: inset 0 -2px #8ABC3F;
-    box-shadow: inset 0 -2px #8ABC3F;
+    -webkit-box-shadow: inset 0 -2px #02acd1;
+    box-shadow: inset 0 -2px #02acd1;
     border-radius: 5px;
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
 }
 #startButton:active, #startButton:hover {
     top: 1px;
-    background: #8ABC3F;
+    background: #02acd1;
     outline: none;
     -webkit-box-shadow: none;
     box-shadow: none;
@@ -241,72 +298,44 @@ form {
     display: inline-block;
 }
 
-#bottomHolder {
-    text-align: right;
+.bottomHolder > a {
+  display: inline-block;
+  position: relative;
+  margin: 2px;
+  border: 0px;
+  padding: 5px 0;
+  width: 108px;
+  height: 16px;
+  font-size: smaller;
+  color: white !important;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  text-decoration: none;
+  cursor: pointer;
+  background: #b58efd;
+  border-radius: 5px;
+  box-shadow: inset 0 -4px rgba(0, 0, 0, 0.15);
 }
-#donate {
-    position: relative;
-    margin: 2px;
-    padding: 5px;
-    width: 80px;
-    box-sizing: border-box;
-    font-size: smaller;
-    color: white;
-    text-align: center;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #B58EFD;
-    border: 0;
-    border-bottom: 2px solid #8D6ADF;
-    cursor: pointer;
-    -webkit-box-shadow: inset 0 -2px #8D6ADF;
-    box-shadow: inset 0 -2px #8D6ADF;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
+.bottomHolder > a:nth-child(3n) {
+  width: 115px;
 }
-#donate:active, #donate:hover {
-    top: 1px;
-    background: #8D6ADF;
-    outline: none;
-    -webkit-box-shadow: none;
-    box-shadow: none;
+.bottomHolder > a:hover {
+  top: 1px;
+  height: 15px;
+  box-shadow: inset 0 -3px rgba(0, 0, 0, 0.15);
 }
-
-#pledge {
-    position: relative;
-    margin: 2px;
-    padding: 5px;
-    width: 80px;
-    box-sizing: border-box;
-    font-size: smaller;
-    color: white;
-    text-align: center;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-    background: #E7896D;
-    border: 0;
-    border-bottom: 2px solid #D83848;
-    cursor: pointer;
-    -webkit-box-shadow: inset 0 -2px #D83848;
-    box-shadow: inset 0 -2px #D83848;
-    border-radius: 5px;
-    -moz-border-radius: 5px;
-    -webkit-border-radius: 5px;
-}
-#pledge:active, #pledge:hover {
-    top: 1px;
-    background: #D83848;
-    outline: none;
-    -webkit-box-shadow: none;
-    box-shadow: none;
+.bottomHolder > a:active {
+  top: 4px;
+  height: 12px;
+  box-shadow: inset 0 -25px rgba(0, 0, 0, 0.15);
 }
 
 #startMenuWrapper {
-    -webkit-transition: max-height 1s;
-    -moz-transition: max-height 1s;
-    -ms-transition: max-height 1s;
-    -o-transition: max-height 1s;
-    transition: max-height 1s;
-    overflow: hidden;
+  transition: top 1s;
+  position: relative;
+  top: 0px;
+  z-index: 2;
+  margin: 0 auto;
 }
 
 .nopadding {
@@ -336,6 +365,26 @@ form {
     left: 0;
     opacity: 0;
 }
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  font: 13px/1 Ubuntu;
+  padding: 2px 28px 2px 8px;
+  height: 21px;
+  margin-left: 3px;
+  background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAAICAYAAAD0g6+qAAAAwklEQVQoU42QMQrCQBBFZxeGgJ7BI1jYa2GzTTY3sRUECy1yA0svEQhhEHIHLdRrqF2a5EuCkbgmmin/zLz5f5QxZsTMK2ZeR1F0p5ay1i7zPD+LiLT1S01Za7dEtCGiY5Zl8zRNH81h3/d3SqkFgFOSJJNOUBAEAwAHIpq6sAbkprWexXF86QSVjTaY53nhy8lfSBWtvuDAKhlAL8gHyHUGAFrr8a84zZhvR7VojBkyc1gUxV5Erl0/cfUvUN9Fd+4JA1JkCdbmVf8AAAAASUVORK5CYII=) 100% no-repeat #eee;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+select:hover {
+  background-color: #ccc;
+}
+select:active {
+  background-color: #eee;
+}
+
 
 input [type="image"]:focus{
  border:none;
