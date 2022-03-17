@@ -859,25 +859,32 @@ const Minimap = class {
 // Build the leaderboard object
 const Entry = class {
     constructor(to) {
-        this.score = Smoothbar(0, 10)
-        this.update(to)
+        this.score = Smoothbar(0, 10);
+        this.truscore = 0;
+        this.nameColor = "#ffffff";
+        this.name = '';
+        this.bar = 0;
+        this.color = 0;
+        this.update(to);
     }
     update(to) {
         this.name = to.name;
-        this.bar = to.bar
-        this.color = to.color
-        this.index = to.index
-        this.score.set(to.score)
-        this.old = false
+        this.bar = to.bar;
+        this.color = to.color;
+        this.index = to.index;
+        this.score.set(to.score);
+        this.old = false;
+        this.nameColor = to.nameColor;
     }
     publish() {
-        let ref = mockups[this.index]
+        let ref = mockups[this.index];
         return {
             image: getEntityImageFromMockup(this.index, this.color),
             position: ref.position,
             barColor: getColor(this.bar),
-            label: this.name.length > 0 ? this.name + " - " + ref.name : ref.name,
+            label: this.name ? this.name + ' - ' + ref.name : ref.name,
             score: this.score.get(),
+            nameColor: this.nameColor
         }
     }
 }
@@ -2646,6 +2653,7 @@ exports.decode = decode
                         name: data[2],
                         color: data[3],
                         bar: data[4],
+                        nameColor: data[2].substring(0, 7),
                     })
                 }
                 leaderboard.update(entries)
@@ -2755,6 +2763,7 @@ exports.decode = decode
                 player.renderx = player.x = m[0];
                 player.rendery = player.y = m[1];
                 player.renderv = player.view = m[2];
+                player.nameColor = m[3];
                 console.log('Camera moved!');
             }
             break;
@@ -3412,25 +3421,13 @@ function drawHealth(x, y, instance, ratio) {
     // Draw label
     if (instance.nameplate && instance.id !== gui.playerid) {
         if (instance.render.textobjs == null) instance.render.textobjs = [TextObj(), TextObj()];
-        if (instance.name !== '\u0000') {
-            instance.render.textobjs[0].draw(
-                instance.name,
-                x, y - realSize - 30, 16, color.guiwhite, 'center'
-            );
-            instance.render.textobjs[1].draw(
-                util.handleLargeNumber(instance.score, true),
-                x, y - realSize - 16, 8, color.guiwhite, 'center'
-            );
-        } else {
-            instance.render.textobjs[0].draw(
-                'a spoopy 👻',
-                x, y - realSize - 30, 16, color.lavender, 'center'
-            );
-            instance.render.textobjs[1].draw(
-                util.handleLargeNumber(instance.score, true),
-                x, y - realSize - 16, 8, color.lavender, 'center'
-            );
-        }
+        var name = instance.name;
+        var namecolor = instance.name.substring(0, 7);
+        let growInSize = ratio * instance.size / 25;
+        instance.render.textobjs[0].draw(instance.name.slice(7), x, y - realSize - 30 * growInSize, 16 * growInSize, namecolor, "center");
+        instance.render.textobjs[1].draw(util.handleLargeNumber(instance.score, !0), x, y - realSize - 16 * growInSize, 8 * growInSize, namecolor, "center");
+        ctx.globalAlpha = 1
+
     }
 }
 
@@ -4021,6 +4018,9 @@ const gameDraw = (() => {
         }
 
         { // Draw name, exp and score bar
+        if (global.showTree) return;
+            animations.scoreBars = util.lerp(animations.scoreBars, 0, .05);
+            ctx.translate(0, animations.scoreBars * global.screenHeight);
             let vspacing = 4;
             let len = 1.65 * alcoveSize * global.screenWidth;
             let height = 25;
@@ -4056,8 +4056,9 @@ const gameDraw = (() => {
             text.name.draw(
                 player.name,
                 Math.round(x + len / 2) + 0.5, Math.round(y - 10 - vspacing) + 0.5,
-                32, color.guiwhite, 'center'
+                32, player.nameColor, 'center'
             );
+            ctx.translate(0, -animations.scoreBars * global.screenHeight)
         }
 
         { // Draw minimap and FPS monitors
@@ -4169,7 +4170,7 @@ const gameDraw = (() => {
                 text.leaderboard[i++].draw(
                     entry.label + ': ' + util.handleLargeNumber(Math.round(entry.score)),
                     x + len / 2, y + height / 2,
-                    height - 5, color.guiwhite, 'center', true
+                    height - 5, entry.nameColor, 'center', true
                 );
                 // Mini-image
                 let scale = height / entry.position.axis,
