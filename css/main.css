@@ -21,7 +21,9 @@
 }
 
 #mainBody {
-  	background-image: linear-gradient(140deg, #03cffc, #003cff)
+     background-image: url("https://svgshare.com/i/fH4.svg");
+     background-size: cover;
+     background-repeat: no-repeat;
 }
 
 hr {
