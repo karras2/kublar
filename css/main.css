@@ -133,10 +133,16 @@ input.checkbox {
     *overflow: hidden;
 }
 
-#playerNameInput {
-    padding: 10px;    
-    font-size: larger;
-}
+#playerNameInput {   
+     font-size: 27.5pt;
+     font-weight: bold;
+     border-radius: 8px;
+     font-family: Ubuntu;
+     text-align: center;
+     width: 55%;
+     border: 5px solid black;
+ }
+
 
 #playerKeyInput {
     padding: 3px;    
