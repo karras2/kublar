@@ -155,6 +155,7 @@ div {
 
 #startMenu {
     position: relative;
+    background: #00000000;
     margin: auto;
     width: 1150px;
     padding: 10px;
